@@ -4,24 +4,24 @@
 <meta charset="UTF-8">
 <meta name="theme-color" content="#0b0b0b">
 <link rel="icon" href="logo-icon.png">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <meta name="robots" content="noindex,nofollow">
 <title>EngagePlus 管理</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap">
 <style>
 :root{color-scheme:dark;--bg:#0b0b0b;--ink:#f3eee2;--sub:#9d9788;--line:#2b2924;--card:#151513;--accent:#d9b66f;--accent-ink:#0b0b0b;--warn:#e8895a}
 *{box-sizing:border-box}
-html,body{height:100%;margin:0}
+html,body{height:100%;margin:0;overflow:hidden}
 body{font-family:"Noto Sans JP",system-ui,sans-serif;background:var(--bg);color:var(--ink)}
 button{border:0;cursor:pointer;font:inherit;color:inherit;background:none}
 button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-#login{height:100%;display:grid;place-items:center;padding:20px}
+#login{height:var(--vh,100dvh);overflow:auto;display:grid;place-items:center;padding:20px}
 #login form{width:100%;max-width:320px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:12px}
 #login h1{font-size:17px;margin:0}
-input,textarea{padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font:inherit;font-size:15px}
+input,textarea{padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font:inherit;font-size:16px}
 .primary{background:var(--accent);color:var(--accent-ink);padding:10px 18px;border-radius:10px;font-weight:700}
 #err{color:var(--warn);font-size:13px;min-height:18px;margin:0}
-#main{display:none;height:100%;grid-template-columns:300px 1fr}
+#main{display:none;height:100%;height:var(--vh,100dvh);grid-template-columns:300px 1fr}
 aside{display:flex;flex-direction:column;background:var(--card);border-right:1px solid var(--line);min-height:0}
 aside .top{padding:14px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:10px}
 aside .top div{display:flex;justify-content:space-between;align-items:center}
@@ -292,6 +292,10 @@ $("del").onclick = () => {
 };
 $("zoom").onclick = () => $("zoom").style.display = "none";
 
+
+// スマホのキーボード表示時に画面が隠れないよう、見えている高さに合わせる
+if (window.visualViewport) { const fit = () => { document.documentElement.style.setProperty("--vh", visualViewport.height + "px"); window.scrollTo(0, 0); }; visualViewport.addEventListener("resize", fit); visualViewport.addEventListener("scroll", fit); fit(); }
+
 // ----- 注文管理 -----
 function setMode(m){
   mode = m; $("tu").className = m === "users" ? "on" : ""; $("to").className = m === "orders" ? "on" : "";
@@ -328,6 +332,7 @@ function showOrder(o){
   add("対象", link(o.account, /^https?:\/\//i.test(o.account)));
   add("備考", o.note || "なし");
   add("PayPayリンク", o.payLink ? link(o.payLink, PAY_RE.test(o.payLink)) : "未受信");
+  add("リンク期限", o.payExpire || "不明");
   add("注文日時", new Date(o.createdAt).toLocaleString("ja-JP"));
   d.appendChild(dl);
   const acts = document.createElement("div"); acts.className = "acts";
