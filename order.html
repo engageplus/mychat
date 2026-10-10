@@ -67,11 +67,6 @@ input,textarea{width:100%;padding:12px;border-radius:10px;border:1px solid var(-
   <a href="chat.html">チャット</a>
 </header>
 <div class="w">
-  <div class="tabs" role="tablist">
-    <button id="t1" class="on">注文する</button>
-    <button id="t2">注文状況 <span id="cnt"></span></button>
-  </div>
-
   <div id="v1">
     <h2>1. プラットフォーム</h2>
     <div class="pf" id="pf"></div>
@@ -87,10 +82,10 @@ input,textarea{width:100%;padding:12px;border-radius:10px;border:1px solid var(-
     <p class="note">アカウントは公開設定にしてください。非公開だと反映できません。</p>
     <h2>備考（任意）</h2>
     <textarea id="nt" rows="2" placeholder="ご希望があればご記入ください"></textarea>
+    <p class="note">注文後は自動でチャット画面に移動します。お支払いの手続きとご連絡は、チャットで行います。</p>
     <p class="err" id="er" role="alert"></p>
   </div>
 
-  <div id="v2" hidden><div id="ol"></div></div>
 </div>
 
 <div class="bar" id="bar"><div>
@@ -184,8 +179,6 @@ $("mi").onclick = () => { Q -= item().min; drawQty(); };
 $("pu").onclick = () => { Q += item().min; drawQty(); };
 $("q").onchange = () => { Q = +$("q").value || item().min; drawQty(); };
 
-function tab(n){ $("t1").className = n===1 ? "on" : ""; $("t2").className = n===2 ? "on" : ""; $("v1").hidden = n!==1; $("v2").hidden = n!==2; $("bar").hidden = n!==1; }
-$("t1").onclick = () => tab(1); $("t2").onclick = () => tab(2);
 
 function say(text, preview){
   const ts = Date.now();
@@ -204,60 +197,14 @@ $("go").onclick = async () => {
   try {
     await db.ref(`orders/${uid}/${id}`).set(o);
     say(`【新規注文 ${id}】\n${o.platform} ${o.service}${plan ? "（" + plan + "）" : ""}\n${Q.toLocaleString()}${o.unit} ／ ${yen(o.total)}\n対象: ${ac}`, `新規注文 ${id}`);
-    $("ac").value = ""; $("nt").value = ""; openId = id; tab(2);
+    $("go").textContent = "チャットへ移動中…"; location.href = "chat.html?o=" + id; return;
   } catch(e){ $("er").textContent = "送信に失敗しました。通信状況をご確認のうえ、もう一度お試しください。"; }
   $("go").disabled = false;
 };
 
-function card(o){
-  const c = document.createElement("div"); c.className = "oc";
-  const h = document.createElement("div"); h.className = "h";
-  const code = document.createElement("code"); code.textContent = o.id;
-  const st = document.createElement("span"); st.className = "st " + o.status; st.textContent = STATUS[o.status] || o.status;
-  h.append(code, st);
-  const d = document.createElement("div"); d.style.marginTop = "6px";
-  d.textContent = `${o.platform} ${o.service}${o.plan ? "（" + o.plan + "）" : ""} ${o.qty.toLocaleString()}${o.unit} ／ ${yen(o.total)}`;
-  const dt = document.createElement("div"); dt.className = "note"; dt.textContent = new Date(o.createdAt).toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"}) + " ／ " + o.account;
-  c.append(h, d, dt);
-  if (o.status === "awaiting_payment") {
-    const p = document.createElement("div"); p.className = "pay";
-    p.innerHTML = `<b>お支払い手続き</b><ol>
-      <li>PayPayアプリで「送る」を開き、金額に <b style="color:var(--accent)">${yen(o.total)}</b> を入力します。</li>
-      <li>送金用のリンク（URL）を作成します。※メニュー名は画面により異なる場合があります。</li>
-      <li>作成したリンクを下に貼り付けて送信してください。</li></ol>`;
-    const row = document.createElement("div"); row.className = "row";
-    const inp = document.createElement("input"); inp.placeholder = "https://pay.paypay.ne.jp/...";
-    const g = document.createElement("button"); g.className = "go"; g.textContent = "送信";
-    const er = document.createElement("p"); er.className = "err"; er.setAttribute("role","alert");
-    g.onclick = async () => {
-      const v = inp.value.trim();
-      if (!PAY_RE.test(v)) { er.textContent = "PayPayの送金リンク（https://pay.paypay.ne.jp/…）を貼り付けてください。"; return; }
-      g.disabled = true;
-      await db.ref(`orders/${uid}/${o.id}`).update({payLink:v, status:"paid_reported", updatedAt:Date.now()});
-      say(`【${o.id}】PayPay送金リンクを送信しました。\n${v}`, `${o.id} 支払いリンク送信`);
-    };
-    row.append(inp, g); p.append(row, er); c.appendChild(p);
-  } else if (o.status === "paid_reported") {
-    const p = document.createElement("div"); p.className = "pay"; p.textContent = "リンクを受け取りました。入金を確認でき次第、作業を開始します。進捗はこの画面とチャットでお知らせします。"; c.appendChild(p);
-  }
-  return c;
-}
-
-function drawOrders(){
-  const list = Object.values(orders).sort((a,b) => b.createdAt - a.createdAt);
-  const pend = list.filter(o => o.status === "awaiting_payment").length;
-  $("cnt").textContent = pend ? `(${pend})` : "";
-  $("ol").replaceChildren(...(list.length ? list.map(card) : [Object.assign(document.createElement("div"), {className:"empty", textContent:"まだ注文はありません。"})]));
-}
-
 (async () => {
-  Q = 0; Q = item().min; drawAll(); tab(1);
+  Q = item().min; drawAll();
   if (!await identify()) return;
-  db.ref("orders/" + uid).on("value", s => {
-    const act = document.activeElement;
-    if (act && act.tagName === "INPUT" && $("ol").contains(act)) return;   // 入力中は再描画しない
-    orders = s.val() || {}; drawOrders();
-  });
 })();
 </script>
 </body>
