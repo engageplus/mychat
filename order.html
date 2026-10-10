@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="theme-color" content="#0b0b0b">
+<link rel="icon" href="logo-icon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>EngagePlus ご注文</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root{color-scheme:dark;--bg:#0b0b0b;--ink:#f3eee2;--sub:#9d9788;--line:#2b2924;--card:#151513;--accent:#d9b66f;--accent-ink:#0b0b0b;--warn:#e8895a;--ok:#7bc48f}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans JP",system-ui,sans-serif;font-size:15px;line-height:1.6;padding-bottom:calc(96px + env(safe-area-inset-bottom))}
+.w{max-width:560px;margin:0 auto;padding:0 16px}
+header{display:flex;align-items:center;gap:10px;padding:calc(12px + env(safe-area-inset-top)) 16px 12px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:5}
+header img{width:32px;height:32px}
+header b{font-size:16px}
+header a{margin-left:auto;color:var(--accent);font-size:13px;text-decoration:none;border:1px solid var(--accent);padding:5px 12px;border-radius:16px}
+.tabs{display:flex;gap:6px;margin:14px 0}
+.tabs button{flex:1;padding:9px;border-radius:10px;background:var(--card);border:1px solid var(--line);color:var(--sub);font-weight:500}
+.tabs button.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700}
+button{font:inherit;cursor:pointer;color:inherit;border:0;background:none}
+button:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+h2{font-size:13px;color:var(--sub);font-weight:500;margin:22px 0 8px;letter-spacing:.04em}
+.pf{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
+.pf button{flex:none;padding:9px 16px;border-radius:20px;background:var(--card);border:1px solid var(--line);font-weight:500}
+.pf button.on{border-color:var(--accent);color:var(--accent);background:rgba(217,182,111,.1)}
+.opt{display:flex;flex-direction:column;gap:8px}
+.opt button{display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:left;padding:13px 14px;border-radius:12px;background:var(--card);border:1px solid var(--line)}
+.opt button.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.opt small{color:var(--sub);display:block;font-size:12px}
+.pr{font-weight:700;color:var(--accent);white-space:nowrap}
+.badge{font-size:11px;background:var(--accent);color:var(--accent-ink);padding:1px 8px;border-radius:10px;margin-left:6px;font-weight:700;vertical-align:1px}
+.qty{display:flex;align-items:center;gap:8px}
+.qty button{width:44px;height:44px;border-radius:12px;background:var(--card);border:1px solid var(--line);font-size:20px}
+.qty input{flex:1;min-width:0;text-align:center;font-size:20px;font-weight:700}
+input,textarea{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit}
+.chips{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.chips button{padding:6px 12px;border-radius:14px;border:1px solid var(--line);background:var(--card);font-size:13px;color:var(--sub)}
+.note{font-size:12px;color:var(--sub);margin:6px 0 0}
+.bar{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom));z-index:6}
+.bar div{max-width:560px;margin:0 auto;display:flex;align-items:center;gap:12px}
+.bar .t{flex:1;font-size:12px;color:var(--sub)}
+.bar .t b{display:block;font-size:22px;color:var(--accent)}
+.go{background:var(--accent);color:var(--accent-ink);font-weight:700;padding:13px 26px;border-radius:24px}
+.go:disabled{opacity:.5}
+.oc{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+.oc .h{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.oc code{color:var(--accent);font-weight:700}
+.st{font-size:12px;padding:2px 10px;border-radius:12px;background:var(--line)}
+.st.awaiting_payment{background:rgba(232,137,90,.2);color:var(--warn)}
+.st.paid_reported,.st.working{background:rgba(217,182,111,.2);color:var(--accent)}
+.st.done{background:rgba(123,196,143,.2);color:var(--ok)}
+.pay{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line);font-size:13.5px}
+.pay ol{padding-left:20px;margin:8px 0}
+.pay .row{display:flex;gap:8px;margin-top:8px}
+.pay .row .go{padding:10px 16px;font-size:14px;white-space:nowrap}
+.err{color:var(--warn);font-size:13px;min-height:18px;margin:6px 0 0}
+.empty{text-align:center;color:var(--sub);padding:40px 0}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<header>
+  <img src="logo-icon.png" alt="">
+  <b>EngagePlus</b>
+  <a href="chat.html">チャット</a>
+</header>
+<div class="w">
+  <div class="tabs" role="tablist">
+    <button id="t1" class="on">注文する</button>
+    <button id="t2">注文状況 <span id="cnt"></span></button>
+  </div>
+
+  <div id="v1">
+    <h2>1. プラットフォーム</h2>
+    <div class="pf" id="pf"></div>
+    <h2>2. サービス</h2>
+    <div class="opt" id="sv"></div>
+    <div id="planBox" hidden><h2>プラン</h2><div class="opt" id="pl"></div></div>
+    <h2>3. 数量</h2>
+    <div class="qty"><button id="mi" aria-label="減らす">−</button><input id="q" type="number" inputmode="numeric"><button id="pu" aria-label="増やす">＋</button></div>
+    <div class="chips" id="ch"></div>
+    <p class="note" id="qn"></p>
+    <h2>4. 対象のアカウント／動画</h2>
+    <input id="ac" placeholder="" autocomplete="off">
+    <p class="note">アカウントは公開設定にしてください。非公開だと反映できません。</p>
+    <h2>備考（任意）</h2>
+    <textarea id="nt" rows="2" placeholder="ご希望があればご記入ください"></textarea>
+    <p class="err" id="er" role="alert"></p>
+  </div>
+
+  <div id="v2" hidden><div id="ol"></div></div>
+</div>
+
+<div class="bar" id="bar"><div>
+  <span class="t">合計（税込）<b id="tot">¥0</b></span>
+  <button class="go" id="go">注文する</button>
+</div></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script>
+// ===== 料金設定（ここを書き換えれば価格・数量が変わります） =====
+// per: 料金の基準数量 / price: その基準数量あたりの金額 / min: 最低注文数（増減の単位） / max: 最大数量
+const CATALOG = [
+ {name:"YouTube", items:[
+  {name:"チャンネル登録者", unit:"人", per:100, price:1300, min:100, max:10000, ph:"チャンネルURL"},
+  {name:"通常動画の再生", unit:"回", per:1000, price:590, min:1000, max:300000, ph:"動画のURL"}]},
+ {name:"TikTok", items:[
+  {name:"フォロワー", unit:"人", per:100, price:750, min:100, max:10000, ph:"アカウントURL または @ID"},
+  {name:"再生回数", unit:"回", per:3000, price:150, min:3000, max:900000, ph:"動画のURL"},
+  {name:"いいね", unit:"回", per:100, price:300, min:100, max:10000, ph:"動画のURL"}]},
+ {name:"X", items:[
+  {name:"フォロワー", unit:"人", per:100, price:1000, min:100, max:10000, ph:"アカウントURL または @ID"}]},
+ {name:"Instagram", items:[
+  {name:"フォロワー", unit:"人", per:100, price:700, min:100, max:10000, ph:"アカウントURL または @ID"},
+  {name:"日本人フォロワー", unit:"人", per:100, min:50, max:10000, ph:"アカウントURL または @ID",
+   plans:[{name:"ライト", price:1800},{name:"スタンダード", price:2800, pop:true},{name:"プレミアム", price:3900}]}]}
+];
+const LIFF_ID = "";   // chat.html と同じ値を設定
+const PAY_RE = /^https:\/\/([a-z0-9-]+\.)?paypay\.ne\.jp\/\S+$/i;
+const STATUS = {awaiting_payment:"お支払い待ち", paid_reported:"入金確認中", working:"作業中", done:"完了", canceled:"キャンセル"};
+
+firebase.initializeApp({
+  apiKey:"AIzaSyBxztcNsOe7b8tcMLY2J8pAMDU7NO28gZs",
+  authDomain:"engageplus-c4ff2.firebaseapp.com",
+  databaseURL:"https://engageplus-c4ff2-default-rtdb.firebaseio.com",
+  projectId:"engageplus-c4ff2",
+  storageBucket:"engageplus-c4ff2.firebasestorage.app",
+  messagingSenderId:"771971030623",
+  appId:"1:771971030623:web:dfc494457835d80f2f85ea"
+});
+const db = firebase.database();
+const $ = id => document.getElementById(id);
+const yen = n => "¥" + n.toLocaleString("ja-JP");
+let uid, profile = {name:"お客様", picture:""};
+let P = 0, S = 0, PL = 1, Q = 0, orders = {}, openId = null;
+
+async function identify(){
+  if (LIFF_ID && window.liff) {
+    try {
+      await liff.init({liffId:LIFF_ID});
+      if (!liff.isLoggedIn()) { liff.login(); return false; }
+      const p = await liff.getProfile();
+      uid = "user_" + p.userId; profile = {name:p.displayName, picture:p.pictureUrl || ""}; return true;
+    } catch(e){ console.warn(e); }
+  }
+  uid = localStorage.getItem("chat_uid");
+  if (!uid) { uid = "user_" + Math.random().toString(36).slice(2,10) + Date.now().toString(36); localStorage.setItem("chat_uid", uid); }
+  return true;
+}
+
+const item = () => CATALOG[P].items[S];
+const unitPrice = () => item().plans ? item().plans[PL].price : item().price;
+const total = () => Math.round(unitPrice() * Q / item().per);
+
+function btn(on, html, fn){ const b = document.createElement("button"); b.className = on ? "on" : ""; b.innerHTML = html; b.onclick = fn; return b; }
+
+function drawAll(){
+  $("pf").replaceChildren(...CATALOG.map((p,i) => btn(i===P, p.name, () => { P=i; S=0; PL=1; Q=item().min; drawAll(); })));
+  $("sv").replaceChildren(...CATALOG[P].items.map((it,i) => {
+    const per = it.plans ? "プランにより異なる" : yen(it.price) + " / " + it.per.toLocaleString() + it.unit;
+    return btn(i===S, `<span>${it.name}<small>最低 ${it.min.toLocaleString()}${it.unit}から</small></span><span class="pr">${per}</span>`, () => { S=i; PL=1; Q=item().min; drawAll(); });
+  }));
+  const it = item();
+  $("planBox").hidden = !it.plans;
+  if (it.plans) $("pl").replaceChildren(...it.plans.map((pl,i) => btn(i===PL,
+    `<span>${pl.name}${pl.pop?'<span class="badge">購入数最多</span>':''}<small>100${it.unit}あたり</small></span><span class="pr">${yen(pl.price)}</span>`, () => { PL=i; drawQty(); drawPlans(); })));
+  $("ac").placeholder = it.ph;
+  drawQty();
+}
+function drawPlans(){ [...$("pl").children].forEach((b,i) => b.className = i===PL ? "on" : ""); }
+function drawQty(){
+  const it = item();
+  Q = Math.min(it.max, Math.max(it.min, Math.ceil(Q / it.min) * it.min));
+  $("q").value = Q; $("q").step = it.min; $("q").min = it.min; $("q").max = it.max;
+  $("ch").replaceChildren(...[1,3,5,10].map(k => { const b = document.createElement("button"); b.textContent = (it.min*k).toLocaleString() + it.unit; b.onclick = () => { Q = it.min*k; drawQty(); }; return b; }));
+  $("qn").textContent = `${it.min.toLocaleString()}${it.unit}単位 ／ 最大 ${it.max.toLocaleString()}${it.unit}`;
+  $("tot").textContent = yen(total());
+}
+$("mi").onclick = () => { Q -= item().min; drawQty(); };
+$("pu").onclick = () => { Q += item().min; drawQty(); };
+$("q").onchange = () => { Q = +$("q").value || item().min; drawQty(); };
+
+function tab(n){ $("t1").className = n===1 ? "on" : ""; $("t2").className = n===2 ? "on" : ""; $("v1").hidden = n!==1; $("v2").hidden = n!==2; $("bar").hidden = n!==1; }
+$("t1").onclick = () => tab(1); $("t2").onclick = () => tab(2);
+
+function say(text, preview){
+  const ts = Date.now();
+  db.ref("chats/" + uid).push({sender:"user", type:"text", content:text, timestamp:ts});
+  db.ref("users/" + uid).update({name:profile.name, picture:profile.picture, lastMessage:preview, lastAt:ts, lastSender:"user"});
+}
+
+$("go").onclick = async () => {
+  const ac = $("ac").value.trim();
+  if (!ac) { $("er").textContent = "対象のアカウントまたは動画のURLを入力してください。"; $("ac").focus(); return; }
+  $("er").textContent = ""; $("go").disabled = true;
+  const it = item(), plan = it.plans ? it.plans[PL].name : "";
+  const id = ("EP" + Date.now().toString(36).slice(-4) + Math.random().toString(36).slice(2,4)).toUpperCase();
+  const now = Date.now();
+  const o = {id, uid, name:profile.name, platform:CATALOG[P].name, service:it.name, plan, qty:Q, unit:it.unit, total:total(), account:ac, note:$("nt").value.trim(), status:"awaiting_payment", createdAt:now, updatedAt:now};
+  try {
+    await db.ref(`orders/${uid}/${id}`).set(o);
+    say(`【新規注文 ${id}】\n${o.platform} ${o.service}${plan ? "（" + plan + "）" : ""}\n${Q.toLocaleString()}${o.unit} ／ ${yen(o.total)}\n対象: ${ac}`, `新規注文 ${id}`);
+    $("ac").value = ""; $("nt").value = ""; openId = id; tab(2);
+  } catch(e){ $("er").textContent = "送信に失敗しました。通信状況をご確認のうえ、もう一度お試しください。"; }
+  $("go").disabled = false;
+};
+
+function card(o){
+  const c = document.createElement("div"); c.className = "oc";
+  const h = document.createElement("div"); h.className = "h";
+  const code = document.createElement("code"); code.textContent = o.id;
+  const st = document.createElement("span"); st.className = "st " + o.status; st.textContent = STATUS[o.status] || o.status;
+  h.append(code, st);
+  const d = document.createElement("div"); d.style.marginTop = "6px";
+  d.textContent = `${o.platform} ${o.service}${o.plan ? "（" + o.plan + "）" : ""} ${o.qty.toLocaleString()}${o.unit} ／ ${yen(o.total)}`;
+  const dt = document.createElement("div"); dt.className = "note"; dt.textContent = new Date(o.createdAt).toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"}) + " ／ " + o.account;
+  c.append(h, d, dt);
+  if (o.status === "awaiting_payment") {
+    const p = document.createElement("div"); p.className = "pay";
+    p.innerHTML = `<b>お支払い手続き</b><ol>
+      <li>PayPayアプリで「送る」を開き、金額に <b style="color:var(--accent)">${yen(o.total)}</b> を入力します。</li>
+      <li>送金用のリンク（URL）を作成します。※メニュー名は画面により異なる場合があります。</li>
+      <li>作成したリンクを下に貼り付けて送信してください。</li></ol>`;
+    const row = document.createElement("div"); row.className = "row";
+    const inp = document.createElement("input"); inp.placeholder = "https://pay.paypay.ne.jp/...";
+    const g = document.createElement("button"); g.className = "go"; g.textContent = "送信";
+    const er = document.createElement("p"); er.className = "err"; er.setAttribute("role","alert");
+    g.onclick = async () => {
+      const v = inp.value.trim();
+      if (!PAY_RE.test(v)) { er.textContent = "PayPayの送金リンク（https://pay.paypay.ne.jp/…）を貼り付けてください。"; return; }
+      g.disabled = true;
+      await db.ref(`orders/${uid}/${o.id}`).update({payLink:v, status:"paid_reported", updatedAt:Date.now()});
+      say(`【${o.id}】PayPay送金リンクを送信しました。\n${v}`, `${o.id} 支払いリンク送信`);
+    };
+    row.append(inp, g); p.append(row, er); c.appendChild(p);
+  } else if (o.status === "paid_reported") {
+    const p = document.createElement("div"); p.className = "pay"; p.textContent = "リンクを受け取りました。入金を確認でき次第、作業を開始します。進捗はこの画面とチャットでお知らせします。"; c.appendChild(p);
+  }
+  return c;
+}
+
+function drawOrders(){
+  const list = Object.values(orders).sort((a,b) => b.createdAt - a.createdAt);
+  const pend = list.filter(o => o.status === "awaiting_payment").length;
+  $("cnt").textContent = pend ? `(${pend})` : "";
+  $("ol").replaceChildren(...(list.length ? list.map(card) : [Object.assign(document.createElement("div"), {className:"empty", textContent:"まだ注文はありません。"})]));
+}
+
+(async () => {
+  Q = 0; Q = item().min; drawAll(); tab(1);
+  if (!await identify()) return;
+  db.ref("orders/" + uid).on("value", s => {
+    const act = document.activeElement;
+    if (act && act.tagName === "INPUT" && $("ol").contains(act)) return;   // 入力中は再描画しない
+    orders = s.val() || {}; drawOrders();
+  });
+})();
+</script>
+</body>
+</html>

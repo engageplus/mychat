@@ -1,201 +1,347 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>チャット管理画面</title>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; height: 100vh; overflow: hidden; }
-    
-    /* パスワード保護用オーバーレイ */
-    #login-overlay {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: #0f172a; display: flex; justify-content: center; align-items: center; z-index: 9999;
-    }
-    .login-box {
-      background: #ffffff; padding: 30px; border-radius: 12px; width: 320px; text-align: center;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-    }
-    .login-box h2 { font-size: 18px; margin-bottom: 15px; color: #1e293b; }
-    .login-box input {
-      width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #cbd5e1;
-      border-radius: 6px; font-size: 16px; text-align: center; outline: none;
-    }
-    .login-box input:focus { border-color: #2563eb; }
-    .login-box button {
-      width: 100%; padding: 10px; background: #2563eb; color: #ffffff; border: none;
-      border-radius: 6px; font-weight: bold; font-size: 15px; cursor: pointer;
-    }
-    .login-box button:hover { background: #1d4ed8; }
-    #login-error { color: #ef4444; font-size: 12px; margin-top: 10px; display: none; }
-
-    /* 管理画面メインレイアウト */
-    #user-list { width: 260px; border-right: 1px solid #e2e8f0; overflow-y: auto; background: #f8fafc; }
-    .user-item { padding: 15px; border-bottom: 1px solid #f1f5f9; cursor: pointer; font-size: 14px; font-weight: 600; word-break: break-all; color: #334155; }
-    .user-item:hover { background: #e2e8f0; }
-    .user-item.active { background: #2563eb; color: #ffffff; }
-    
-    #chat-area { flex: 1; display: flex; flex-direction: column; background: #f1f5f9; }
-    .chat-container { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; scroll-behavior: smooth; }
-    .message { max-width: 75%; padding: 10px 14px; border-radius: 16px; font-size: 14px; line-height: 1.4; word-break: break-word; }
-    .user-msg { align-self: flex-start; background: #ffffff; color: #0f172a; border-bottom-left-radius: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
-    .admin-msg { align-self: flex-end; background: #2563eb; color: #ffffff; border-bottom-right-radius: 2px; }
-    .msg-img { max-width: 100%; border-radius: 8px; margin-top: 5px; }
-    
-    .input-area { background: #ffffff; padding: 12px; display: flex; gap: 8px; border-top: 1px solid #e2e8f0; }
-    textarea { flex: 1; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px; font-size: 14px; height: 45px; resize: none; outline: none; font-family: inherit; }
-    textarea:focus { border-color: #2563eb; }
-    button.send-btn { background: #2563eb; color: white; border: none; padding: 0 20px; border-radius: 8px; font-weight: bold; cursor: pointer; }
-    button.send-btn:hover { background: #1d4ed8; }
-  </style>
+<meta charset="UTF-8">
+<meta name="theme-color" content="#0b0b0b">
+<link rel="icon" href="logo-icon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>EngagePlus 管理</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root{color-scheme:dark;--bg:#0b0b0b;--ink:#f3eee2;--sub:#9d9788;--line:#2b2924;--card:#151513;--accent:#d9b66f;--accent-ink:#0b0b0b;--warn:#e8895a}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font-family:"Noto Sans JP",system-ui,sans-serif;background:var(--bg);color:var(--ink)}
+button{border:0;cursor:pointer;font:inherit;color:inherit;background:none}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#login{height:100%;display:grid;place-items:center;padding:20px}
+#login form{width:100%;max-width:320px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:12px}
+#login h1{font-size:17px;margin:0}
+input,textarea{padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font:inherit;font-size:15px}
+.primary{background:var(--accent);color:var(--accent-ink);padding:10px 18px;border-radius:10px;font-weight:700}
+#err{color:var(--warn);font-size:13px;min-height:18px;margin:0}
+#main{display:none;height:100%;grid-template-columns:300px 1fr}
+aside{display:flex;flex-direction:column;background:var(--card);border-right:1px solid var(--line);min-height:0}
+aside .top{padding:14px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:10px}
+aside .top div{display:flex;justify-content:space-between;align-items:center}
+aside h2{font-size:15px;margin:0}
+.lo{font-size:12px;color:var(--sub);text-decoration:underline}
+#list{flex:1;overflow-y:auto}
+.u{display:flex;gap:10px;align-items:center;width:100%;padding:12px 14px;text-align:left;border-bottom:1px solid var(--line)}
+.u:hover{background:var(--bg)}
+.u.on{background:var(--bg);box-shadow:inset 3px 0 var(--accent)}
+.av{width:38px;height:38px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-weight:700;flex:none;object-fit:cover}
+.inf{min-width:0;flex:1}
+.inf b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.inf span{display:block;font-size:12px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.inf em{font-style:normal;font-size:11px;color:var(--accent)}
+.dot{min-width:10px;height:10px;border-radius:50%;background:var(--warn);flex:none}
+section{display:flex;flex-direction:column;min-width:0;min-height:0}
+#head{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--card);border-bottom:1px solid var(--line)}
+#back{display:none;font-size:20px}
+#head b{font-size:15px}
+#head small{color:var(--sub);font-size:12px;display:block}
+#del{margin-left:auto;font-size:12px;color:var(--warn)}
+#msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+.row{display:flex;flex-direction:column;max-width:72%}
+.row.admin{align-self:flex-end;align-items:flex-end}
+.row.user{align-self:flex-start;align-items:flex-start}
+.b{padding:9px 13px;border-radius:16px;font-size:14.5px;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+.admin .b{background:var(--accent);color:var(--accent-ink);border-bottom-right-radius:4px}
+.user .b{background:var(--card);border:1px solid var(--line);border-bottom-left-radius:4px}
+.b.img{padding:4px;background:var(--card);border:1px solid var(--line)}
+.b img{max-width:100%;max-height:300px;border-radius:10px;display:block;cursor:zoom-in}
+.t{font-size:11px;color:var(--sub);margin-top:3px}
+.hint{margin:auto;color:var(--sub);font-size:14px;text-align:center}
+#f{display:flex;gap:8px;align-items:flex-end;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:var(--card);border-top:1px solid var(--line)}
+#f textarea{flex:1;resize:none;max-height:140px;border-radius:18px}
+.ic{width:40px;height:40px;font-size:20px;color:var(--sub)}
+#zoom{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;place-items:center;z-index:9}
+#zoom img{max-width:94%;max-height:94%}
+@media(max-width:720px){
+  #main{grid-template-columns:1fr}
+  #main.chat aside{display:none}
+  #main:not(.chat) section{display:none}
+  #back{display:block}
+  .row{max-width:86%}
+}
+[hidden]{display:none!important}
+.tb{display:flex;gap:6px}
+.tb button{flex:1;padding:7px;border-radius:8px;background:var(--bg);border:1px solid var(--line);color:var(--sub);font-size:13px}
+.tb button.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700}
+.o b{font-size:13.5px}
+.o small{font-size:11px}
+.st{font-size:11px;padding:1px 8px;border-radius:10px;background:var(--line);color:var(--sub);white-space:nowrap;flex:none}
+.st.paid_reported{background:var(--warn);color:#0b0b0b;font-weight:700}
+.st.awaiting_payment{background:rgba(232,137,90,.2);color:var(--warn)}
+.st.working{background:rgba(217,182,111,.2);color:var(--accent)}
+#detail{flex:1;overflow-y:auto;padding:16px}
+#detail dl{display:grid;grid-template-columns:96px 1fr;gap:8px 12px;margin:0 0 18px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;font-size:14px}
+#detail dt{color:var(--sub);font-size:12px;padding-top:2px}
+#detail dd{margin:0;word-break:break-all}
+#detail a{color:var(--accent)}
+.acts{display:flex;gap:8px;flex-wrap:wrap}
+.acts button{padding:10px 16px;border-radius:10px;border:1px solid var(--line);background:var(--card)}
+.acts .primary{border:0}
+</style>
 </head>
 <body>
-
-<!-- パスワード保護オーバーレイ -->
-<div id="login-overlay">
-  <div class="login-box">
-    <h2>管理者ログイン</h2>
-    <input type="password" id="pass-input" placeholder="パスワードを入力" onkeydown="if(event.key==='Enter') checkPassword()">
-    <button onclick="checkPassword()">ログイン</button>
-    <div id="login-error">パスワードが違います</div>
-  </div>
+<div id="login">
+  <form id="lf">
+    <img src="logo.png" alt="EngagePlus" style="width:150px;height:150px;object-fit:contain;align-self:center;margin:-10px 0">
+    <h1 style="text-align:center">管理ログイン</h1>
+    <input type="password" id="pw" placeholder="パスワード" autocomplete="current-password" aria-label="パスワード">
+    <p id="err" role="alert"></p>
+    <button class="primary">ログイン</button>
+  </form>
 </div>
 
-<!-- 管理画面本体 -->
-<div id="user-list">
-  <div style="padding: 15px; font-size: 12px; color: #64748b; text-align: center;">ユーザー読み込み中...</div>
+<div id="main">
+  <aside>
+    <div class="top">
+      <div><h2 style="display:flex;align-items:center;gap:8px"><img src="logo-icon.png" alt="" width="22" height="22">お客様一覧</h2><button class="lo" id="lo">ログアウト</button></div>
+      <div class="tb"><button id="tu" class="on">お客様</button><button id="to">注文 <span id="oc"></span></button></div>
+      <input id="q" placeholder="名前・ID・内容で検索" aria-label="検索">
+    </div>
+    <div id="list"></div>
+  </aside>
+  <section>
+    <div id="head">
+      <button id="back" aria-label="一覧に戻る">‹</button>
+      <div><b id="hn">お客様を選択してください</b><small id="hs"></small></div>
+      <button id="del" hidden>履歴を削除</button>
+    </div>
+    <div id="msgs"><div class="hint">左の一覧からお客様を選ぶと、やり取りが表示されます。</div></div>
+    <div id="detail" hidden></div>
+    <form id="f" hidden>
+      <button type="button" class="ic" id="pick" aria-label="画像を送る">🖼</button>
+      <input type="file" id="file" accept="image/*" hidden>
+      <textarea id="in" rows="1" placeholder="返信を入力（Ctrl/⌘+Enterで送信）" aria-label="返信"></textarea>
+      <button class="primary">送信</button>
+    </form>
+  </section>
 </div>
-<div id="chat-area">
-  <div class="chat-container" id="chat-container">
-    <div style="text-align: center; color: #64748b; margin-top: 20px; font-size: 14px;">左側のリストからお客様を選択してください</div>
-  </div>
-  <div class="input-area">
-    <textarea id="msg-input" placeholder="返答を入力..."></textarea>
-    <button class="send-btn" onclick="sendReply()">送信</button>
-  </div>
-</div>
+<div id="zoom"><img alt=""></div>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script>
-  // ★設定1: 管理画面のログインパスワード（好きな文字列に変更してください）
-  const ADMIN_PASSWORD = "1441sh16";
+// ===== 設定 =====
+// パスワードのSHA-256ハッシュ。変更方法: ブラウザのコンソールで下記を実行し、出力を貼り付け
+// crypto.subtle.digest("SHA-256",new TextEncoder().encode("新パスワード")).then(b=>console.log([...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")))
+const PASS_HASH = "ccc0b903bce51fb554262d742d0a282e1f8a87d064f1cf44f8ff5148ca4beb42";
+const MAX_IMG = 900;
 
-  // パスワード認証チェック
-  function checkPassword() {
-    const inputPass = document.getElementById('pass-input').value;
-    if (inputPass === ADMIN_PASSWORD) {
-      sessionStorage.setItem('admin_auth', 'true');
-      document.getElementById('login-overlay').style.display = 'none';
-      initAdminApp();
-    } else {
-      document.getElementById('login-error').style.display = 'block';
-    }
+firebase.initializeApp({
+  apiKey:"AIzaSyBxztcNsOe7b8tcMLY2J8pAMDU7NO28gZs",
+  authDomain:"engageplus-c4ff2.firebaseapp.com",
+  databaseURL:"https://engageplus-c4ff2-default-rtdb.firebaseio.com",
+  projectId:"engageplus-c4ff2",
+  storageBucket:"engageplus-c4ff2.firebasestorage.app",
+  messagingSenderId:"771971030623",
+  appId:"1:771971030623:web:dfc494457835d80f2f85ea"
+});
+const db = firebase.database();
+const $ = id => document.getElementById(id);
+let users = {}, current = null, chatRef = null, mode = "users", allOrders = [], curOrder = null;
+const PAY_RE = /^https:\/\/([a-z0-9-]+\.)?paypay\.ne\.jp\/\S+$/i;
+const ST = {awaiting_payment:"お支払い待ち", paid_reported:"入金確認待ち", working:"作業中", done:"完了", canceled:"キャンセル"};
+const reads = JSON.parse(localStorage.getItem("admin_reads") || "{}");
+
+async function sha(s){
+  const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+  return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2,"0")).join("");
+}
+
+// ----- ログイン -----
+function showApp(){ $("login").style.display = "none"; $("main").style.display = "grid"; startList(); }
+$("lf").addEventListener("submit", async e => {
+  e.preventDefault();
+  const fails = +sessionStorage.getItem("fails") || 0, until = +sessionStorage.getItem("lock") || 0;
+  if (Date.now() < until) { $("err").textContent = "しばらく待ってから再度お試しください。"; return; }
+  if (await sha($("pw").value) === PASS_HASH) { sessionStorage.setItem("admin_ok","1"); sessionStorage.removeItem("fails"); showApp(); }
+  else {
+    sessionStorage.setItem("fails", fails + 1);
+    if (fails + 1 >= 5) { sessionStorage.setItem("lock", Date.now() + 60000); sessionStorage.setItem("fails", 0); }
+    $("err").textContent = "パスワードが違います。"; $("pw").value = "";
   }
+});
+$("lo").onclick = () => { sessionStorage.clear(); location.reload(); };
+if (sessionStorage.getItem("admin_ok") === "1") showApp();
 
-  // すでにログイン済みか確認
-  window.onload = function() {
-    if (sessionStorage.getItem('admin_auth') === 'true') {
-      document.getElementById('login-overlay').style.display = 'none';
-      initAdminApp();
-    }
-  };
+// ----- 一覧 -----
+const fmt = ts => { const d = new Date(ts), n = new Date(); return d.toDateString() === n.toDateString() ? d.getHours()+":"+String(d.getMinutes()).padStart(2,"0") : (d.getMonth()+1)+"/"+d.getDate(); };
+const unread = (id,u) => u.lastSender === "user" && (u.lastAt || 0) > (reads[id] || 0);
 
-  // Firebase初期化 & アプリ起動
-  function initAdminApp() {
-    const firebaseConfig = {
-      apiKey: "AIzaSyBxztcNsOe7b8tcMLY2J8pAMDU7NO28gZs",
-      authDomain: "engageplus-c4ff2.firebaseapp.com",
-      databaseURL: "https://engageplus-c4ff2-default-rtdb.firebaseio.com",
-      projectId: "engageplus-c4ff2",
-      storageBucket: "engageplus-c4ff2.firebasestorage.app",
-      messagingSenderId: "771971030623",
-      appId: "1:771971030623:web:dfc494457835d80f2f85ea",
-      measurementId: "G-HMYKNE552W"
-    };
+function startList(){
+  db.ref("users").on("value", s => { users = s.val() || {}; drawList(); });
+  db.ref("orders").on("value", s => {
+    allOrders = []; Object.values(s.val() || {}).forEach(u => Object.values(u).forEach(o => allOrders.push(o)));
+    allOrders.sort((a,b) => b.createdAt - a.createdAt);
+    const n = allOrders.filter(o => o.status === "paid_reported").length;
+    $("oc").textContent = n ? "(" + n + ")" : "";
+    if (mode === "orders") drawList();
+    if (curOrder) { const o = allOrders.find(x => x.id === curOrder); if (o) showOrder(o); }
+  });
+  $("tu").onclick = () => setMode("users"); $("to").onclick = () => setMode("orders");
+  $("q").addEventListener("input", drawList);
+}
+function drawList(){
+  if (mode === "orders") return drawOrders();
+  const q = $("q").value.trim().toLowerCase(), box = $("list");
+  box.textContent = "";
+  const ids = Object.keys(users).filter(id => {
+    const u = users[id]; return !q || (id + (u.name||"") + (u.lastMessage||"") + (u.service||"")).toLowerCase().includes(q);
+  }).sort((a,b) => (users[b].lastAt||0) - (users[a].lastAt||0));
+  if (!ids.length) { const h = document.createElement("div"); h.className = "hint"; h.style.padding = "24px"; h.textContent = q ? "該当するお客様がいません。" : "まだお客様からのメッセージはありません。"; box.appendChild(h); return; }
+  ids.forEach(id => {
+    const u = users[id];
+    const b = document.createElement("button");
+    b.className = "u" + (id === current ? " on" : "");
+    let av;
+    if (u.picture) { av = new Image(); av.src = u.picture; av.alt = ""; av.className = "av"; }
+    else { av = document.createElement("div"); av.className = "av"; av.textContent = (u.name || "お")[0]; }
+    const inf = document.createElement("div"); inf.className = "inf";
+    const n = document.createElement("b"); n.textContent = u.name && u.name !== "お客様" ? u.name : id.replace("user_","").slice(0,10);
+    const m = document.createElement("span"); m.textContent = (u.lastSender === "admin" ? "あなた: " : "") + (u.lastMessage || "");
+    inf.append(n, m);
+    if (u.service) { const s = document.createElement("em"); s.textContent = u.service; inf.appendChild(s); }
+    b.append(av, inf);
+    if (unread(id,u)) { const d = document.createElement("span"); d.className = "dot"; d.setAttribute("aria-label","未読"); b.appendChild(d); }
+    const t = document.createElement("small"); t.style.cssText = "color:var(--sub);font-size:11px;align-self:flex-start"; t.textContent = u.lastAt ? fmt(u.lastAt) : ""; b.appendChild(t);
+    b.onclick = () => openChat(id);
+    box.appendChild(b);
+  });
+}
 
-    if (!firebase.apps.length) {
-      firebase.initializeApp(firebaseConfig);
-    }
-    
-    const db = firebase.database();
-    let currentUserId = null;
-    const container = document.getElementById('chat-container');
-
-    function scrollToBottom() {
-      setTimeout(() => { container.scrollTop = container.scrollHeight; }, 50);
-    }
-
-    // ユーザー一覧の取得
-    db.ref('chats').on('value', (snapshot) => {
-      const listDiv = document.getElementById('user-list');
-      listDiv.innerHTML = '';
-      
-      if (!snapshot.exists()) {
-        listDiv.innerHTML = '<div style="padding: 15px; font-size: 12px; color: #64748b; text-align: center;">まだメッセージはありません</div>';
-        return;
-      }
-
-      snapshot.forEach((child) => {
-        const uId = child.key;
-        const item = document.createElement('div');
-        item.className = 'user-item ' + (uId === currentUserId ? 'active' : '');
-        item.innerText = uId;
-        item.onclick = () => selectUser(uId);
-        listDiv.appendChild(item);
-      });
-    });
-
-    // ユーザー選択
-    window.selectUser = function(uId) {
-      currentUserId = uId;
-      document.querySelectorAll('.user-item').forEach(el => el.classList.remove('active'));
-      
-      container.innerHTML = '';
-
-      db.ref('chats/' + uId).off();
-      db.ref('chats/' + uId).on('child_added', (snapshot) => {
-        const data = snapshot.val();
-        const msgDiv = document.createElement('div');
-        msgDiv.className = 'message ' + (data.sender === 'user' ? 'user-msg' : 'admin-msg');
-
-        if (data.type === 'text') {
-          msgDiv.innerText = data.content;
-          container.appendChild(msgDiv);
-          scrollToBottom();
-        } else if (data.type === 'image') {
-          const img = document.createElement('img');
-          img.src = data.content;
-          img.className = 'msg-img';
-          img.onload = () => scrollToBottom();
-          msgDiv.appendChild(img);
-          container.appendChild(msgDiv);
-          scrollToBottom();
-        }
-      });
-    };
-
-    // 返信送信
-    window.sendReply = function() {
-      if (!currentUserId) {
-        alert('左側のリストからユーザーを選択してください');
-        return;
-      }
-      const input = document.getElementById('msg-input');
-      const text = input.value.trim();
-      if (!text) return;
-
-      db.ref('chats/' + currentUserId).push({
-        sender: 'admin',
-        type: 'text',
-        content: text,
-        timestamp: Date.now()
-      });
-      input.value = '';
-    };
+// ----- チャット -----
+function markRead(){ if (!current) return; reads[current] = Date.now(); localStorage.setItem("admin_reads", JSON.stringify(reads)); drawList(); }
+function openChat(id){
+  if (chatRef) chatRef.off();
+  current = id; curOrder = null; $("detail").hidden = true; $("msgs").hidden = false; $("main").classList.add("chat");
+  const u = users[id] || {};
+  $("hn").textContent = (u.name && u.name !== "お客様" ? u.name : id);
+  $("hs").textContent = (u.service ? u.service + " ・ " : "") + id;
+  $("del").hidden = false; $("f").hidden = false;
+  $("msgs").textContent = "";
+  chatRef = db.ref("chats/" + id).orderByChild("timestamp");
+  chatRef.on("child_added", s => { if (current === id) { render(s.val()); markRead(); } });
+}
+function render(m){
+  const box = $("msgs");
+  const row = document.createElement("div"); row.className = "row " + (m.sender === "admin" ? "admin" : "user");
+  const b = document.createElement("div");
+  if (m.type === "image" && /^data:image\//.test(m.content)) {
+    b.className = "b img";
+    const i = new Image(); i.alt = "画像"; i.src = m.content; i.onload = end;
+    i.onclick = () => { $("zoom").firstElementChild.src = m.content; $("zoom").style.display = "grid"; };
+    b.appendChild(i);
+  } else {
+    b.className = "b";
+    if (m.service) { const s = document.createElement("div"); s.style.cssText = "font-size:12px;opacity:.75;margin-bottom:3px"; s.textContent = "【" + m.service + "】"; b.appendChild(s); }
+    b.appendChild(document.createTextNode(m.content || ""));
   }
+  const t = document.createElement("div"); t.className = "t"; t.textContent = new Date(m.timestamp).toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"});
+  row.append(b, t); box.appendChild(row); end();
+}
+function end(){ const b = $("msgs"); b.scrollTop = b.scrollHeight; }
+
+function push(msg, preview, target = current){
+  if (!target) return;
+  const ts = Date.now();
+  db.ref("chats/" + target).push({...msg, sender:"admin", timestamp:ts});
+  db.ref("users/" + target).update({lastMessage:preview, lastAt:ts, lastSender:"admin"});
+}
+function sendText(){
+  const v = $("in").value.trim(); if (!v) return;
+  push({type:"text", content:v}, v.slice(0,60));
+  $("in").value = ""; $("in").style.height = "auto";
+}
+function resizeImage(file){
+  return new Promise((ok, ng) => {
+    const r = new FileReader(); r.onerror = ng;
+    r.onload = () => {
+      const img = new Image(); img.onerror = ng;
+      img.onload = () => {
+        const k = Math.min(1, MAX_IMG / Math.max(img.width, img.height));
+        const c = document.createElement("canvas"); c.width = Math.round(img.width*k); c.height = Math.round(img.height*k);
+        c.getContext("2d").drawImage(img,0,0,c.width,c.height); ok(c.toDataURL("image/jpeg",0.75));
+      };
+      img.src = r.result;
+    };
+    r.readAsDataURL(file);
+  });
+}
+$("f").addEventListener("submit", e => { e.preventDefault(); sendText(); });
+$("in").addEventListener("keydown", e => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); sendText(); } });
+$("in").addEventListener("input", e => { e.target.style.height = "auto"; e.target.style.height = Math.min(e.target.scrollHeight,140) + "px"; });
+$("pick").onclick = () => $("file").click();
+$("file").onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+  try { push({type:"image", content: await resizeImage(f)}, "[画像]"); } catch { alert("画像を読み込めませんでした。"); }
+};
+$("back").onclick = () => $("main").classList.remove("chat");
+$("del").onclick = () => {
+  if (!current || !confirm("このお客様のチャット履歴を完全に削除します。よろしいですか？")) return;
+  const id = current; chatRef.off(); current = null;
+  db.ref("chats/" + id).remove(); db.ref("users/" + id).remove();
+  $("msgs").innerHTML = '<div class="hint">削除しました。</div>'; $("f").hidden = true; $("del").hidden = true;
+  $("hn").textContent = "お客様を選択してください"; $("hs").textContent = "";
+  $("main").classList.remove("chat");
+};
+$("zoom").onclick = () => $("zoom").style.display = "none";
+
+// ----- 注文管理 -----
+function setMode(m){
+  mode = m; $("tu").className = m === "users" ? "on" : ""; $("to").className = m === "orders" ? "on" : "";
+  $("q").placeholder = m === "users" ? "名前・ID・内容で検索" : "注文番号・名前・アカウントで検索";
+  drawList();
+}
+function drawOrders(){
+  const q = $("q").value.trim().toLowerCase(), box = $("list"); box.textContent = "";
+  const rows = allOrders.filter(o => !q || (o.id + o.name + o.account + o.service + o.platform).toLowerCase().includes(q));
+  if (!rows.length) { const h = document.createElement("div"); h.className = "hint"; h.style.padding = "24px"; h.textContent = "注文はまだありません。"; box.appendChild(h); return; }
+  rows.forEach(o => {
+    const b = document.createElement("button"); b.className = "u o" + (o.id === curOrder ? " on" : "");
+    const inf = document.createElement("div"); inf.className = "inf";
+    const n = document.createElement("b"); n.textContent = o.id + "　¥" + o.total.toLocaleString();
+    const m = document.createElement("span"); m.textContent = o.platform + " " + o.service + " " + o.qty.toLocaleString() + o.unit;
+    inf.append(n, m);
+    const s = document.createElement("span"); s.className = "st " + o.status; s.textContent = ST[o.status] || o.status;
+    b.append(inf, s); b.onclick = () => showOrder(o); box.appendChild(b);
+  });
+}
+function showOrder(o){
+  if (chatRef) { chatRef.off(); chatRef = null; }
+  current = null; curOrder = o.id; $("main").classList.add("chat");
+  $("msgs").hidden = true; $("f").hidden = true; $("del").hidden = true; $("detail").hidden = false;
+  $("hn").textContent = "注文 " + o.id; $("hs").textContent = ST[o.status] || o.status;
+  const d = $("detail"); d.textContent = "";
+  const dl = document.createElement("dl");
+  const add = (k, v) => { const dt = document.createElement("dt"); dt.textContent = k; const dd = document.createElement("dd"); if (v instanceof Node) dd.appendChild(v); else dd.textContent = v; dl.append(dt, dd); };
+  const link = (u, ok) => { if (!ok) return u; const a = document.createElement("a"); a.href = u; a.target = "_blank"; a.rel = "noopener noreferrer"; a.textContent = u; return a; };
+  add("お客様", o.name && o.name !== "お客様" ? o.name : o.uid);
+  add("サービス", o.platform + " " + o.service + (o.plan ? "（" + o.plan + "）" : ""));
+  add("数量", o.qty.toLocaleString() + o.unit);
+  add("金額", "¥" + o.total.toLocaleString());
+  add("対象", link(o.account, /^https?:\/\//i.test(o.account)));
+  add("備考", o.note || "なし");
+  add("PayPayリンク", o.payLink ? link(o.payLink, PAY_RE.test(o.payLink)) : "未受信");
+  add("注文日時", new Date(o.createdAt).toLocaleString("ja-JP"));
+  d.appendChild(dl);
+  const acts = document.createElement("div"); acts.className = "acts";
+  const act = (label, cls, fn) => { const b = document.createElement("button"); b.textContent = label; if (cls) b.className = cls; b.onclick = fn; acts.appendChild(b); };
+  if (o.status === "awaiting_payment" || o.status === "paid_reported") act("入金確認・作業開始", "primary", () => setStatus(o, "working", "【" + o.id + "】入金を確認しました。作業を開始します。完了まで少々お待ちください。"));
+  if (o.status === "working") act("完了にする", "primary", () => setStatus(o, "done", "【" + o.id + "】作業が完了しました。反映をご確認ください。ご不明点はこのチャットでお知らせください。"));
+  if (o.status !== "done" && o.status !== "canceled") act("キャンセル", "", () => { if (confirm("この注文をキャンセルします。よろしいですか？")) setStatus(o, "canceled", "【" + o.id + "】ご注文をキャンセルしました。"); });
+  act("チャットを開く", "", () => { setMode("users"); openChat(o.uid); });
+  d.appendChild(acts);
+}
+function setStatus(o, status, text){
+  db.ref("orders/" + o.uid + "/" + o.id).update({status, updatedAt:Date.now()});
+  push({type:"text", content:text}, text.slice(0, 60), o.uid);
+}
 </script>
-
 </body>
 </html>
