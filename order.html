@@ -116,15 +116,11 @@ details a{color:var(--accent)}
     <div class="rec">
       <b id="rc"></b>
       <p>お客様の実績を、オープンチャットのノートで公開しています。</p>
-      <a class="ghost" href="https://line.me/ti/g2/yhad06VJ-ZM_CIR-6NqtIqZGRN56lYDaVUempQ?utm_source=invitation&utm_medium=link_copy&utm_campaign=default" target="_blank" rel="noopener noreferrer">オープンチャットを開く</a>
+      <a class="ghost" id="ocl" href="#" target="_blank" rel="noopener noreferrer">オープンチャットを開く</a>
       <p class="note">開いたら、右上の三本線（☰）→「ノート」→一番下の「実績」欄からご確認ください。</p>
     </div>
     <h2>よくある質問</h2>
-    <details><summary>アカウントが凍結されませんか？</summary><p>パスワードをお聞きすることはなく、お客様のアカウントにログインして操作することもありません。公開されているURLだけで行います。これまでにご利用いただいたお客様から、シャドウバンや凍結の報告はありません（2026年10月時点）。ただし、最終的な判断は各SNSが行うため、ご利用はご自身の判断でお願いします。</p></details>
-    <details><summary>パスワードは必要ですか？</summary><p>いいえ、必要ありません。ご入力いただくのは、URLだけです。</p></details>
-    <details><summary>いつから始まりますか？</summary><p>入金の確認後、通常1日以内に開始します。進み具合は、注文後のチャット画面で確認できます。</p></details>
-    <details><summary>数が減ったらどうなりますか？</summary><p>Instagramの日本人フォロワーを除くすべてのサービスは、永久減少保証です。減少した分は、無料で補充します。</p></details>
-    <details><summary>提供できなかった場合は？</summary><p>他のサービスへの変更、またはご希望により返金で対応します。詳しくは<a href="terms.html#refund">返金・キャンセル</a>をご確認ください。</p></details>
+    <div id="oqa"></div>
     <p class="note" style="text-align:center"><a href="faq.html" style="color:var(--accent)">ほかの質問を見る</a></p>
   </div>
 
@@ -153,36 +149,14 @@ details a{color:var(--accent)}
   <button class="go" id="go">注文する</button>
 </div><p class="nb" style="margin:6px auto 0;text-align:center">ご注文により、<a href="terms.html">利用規約</a>に同意したものとみなします。</p></div>
 
+<script src="site-data.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script>
 // ===== 料金設定（ここを書き換えれば価格・数量が変わります） =====
 // per: 料金の基準数量 / price: その基準数量あたりの金額 / min: 最低注文数（増減の単位） / max: 最大数量
-const CATALOG = [
- {name:"YouTube", items:[
-  {name:"チャンネル登録者", unit:"人", per:100, price:1300, min:100, max:10000, hint:"YouTubeのチャンネルURL", ex:"https://www.youtube.com/@XXXXX",
-   info:["⌛ 開始時間: 1日以内","⚡ 増加スピード: 50〜100人/日","✅ 永久減少保証"]},
-  {name:"通常動画の再生", unit:"回", per:1000, price:590, min:1000, max:300000, hint:"YouTubeの動画URL", ex:"https://www.youtube.com/watch?v=XXXXX",
-   info:["⌛ 開始時間: 1日以内","⚡ 増加スピード: 4,000〜5,000回/日","✅ 永久減少保証"]}]},
- {name:"TikTok", items:[
-  {name:"フォロワー", unit:"人", per:100, price:750, min:100, max:10000, hint:"TikTokのアカウントURL", ex:"https://www.tiktok.com/@XXXXX",
-   info:["⌛ 開始時間: 1日以内","⚡ 増加スピード: 500〜1,000人/日","✅ 永久減少保証"]},
-  {name:"再生回数", unit:"回", per:3000, price:150, min:3000, max:900000, hint:"TikTokの動画URL", ex:"https://www.tiktok.com/@XXXXX/video/0000000000",
-   info:["⌛ 開始時間: 1日以内","⚡ 増加スピード: 5,000,000回/日","✅ 永久減少保証"]},
-  {name:"いいね", unit:"回", per:100, price:300, min:100, max:10000, hint:"TikTokの動画URL", ex:"https://www.tiktok.com/@XXXXX/video/0000000000",
-   info:["⌛ 開始時間: 1日以内","⚡ 増加スピード: 最大10,000回/日","✅ 永久減少保証"]}]},
- {name:"X", items:[
-  {name:"フォロワー", unit:"人", per:100, price:1000, min:100, max:10000, hint:"XのアカウントURL", ex:"https://x.com/XXXXX",
-   info:["⌛ 開始時間: 1日以内","⚡ 増加スピード: 50〜100人/日（最大1,000人/日）","✅ 永久減少保証"]}]},
- {name:"Instagram", items:[
-  {name:"フォロワー", unit:"人", per:100, price:700, min:100, max:10000, hint:"InstagramアカウントのURL", ex:"https://www.instagram.com/XXXXX/",
-   info:["⌛ 開始時間: 1日以内","⚡ 増加スピード: 500〜1,000人/日","✅ 最高品質アカウント・永久減少保証"]},
-  {name:"日本人フォロワー", unit:"人", per:100, min:50, max:10000, hint:"InstagramアカウントのURL", ex:"https://www.instagram.com/XXXXX/",
-   info:["⌛ 開始時間: 1日以内"],
-   plans:[{name:"ライト", price:1800},{name:"スタンダード", price:2800, pop:true},{name:"プレミアム", price:3900}]}]}
-];
-const TRACK_COUNT = "約300件";   // 実績の件数（増えたら更新）
+const CATALOG = SITE.catalog;   // 価格・サービスは site-data.js で編集します
 const LIFF_ID = "";   // chat.html と同じ値を設定
 const PAY_URL = /https:\/\/(?:[a-z0-9-]+\.)?paypay\.ne\.jp\/[A-Za-z0-9_\-\/?=&%.~]+/gi;
 const STATUS = {awaiting_payment:"お支払い待ち", paid_reported:"入金確認中", working:"作業中", done:"完了", canceled:"キャンセル"};
@@ -222,6 +196,17 @@ const total = () => Math.round(unitPrice() * Q / item().per);
 
 function btn(on, html, fn){ const b = document.createElement("button"); b.className = on ? "on" : ""; b.innerHTML = html; b.onclick = fn; return b; }
 
+function infoLines(it){
+  return ["⌛ 開始時間: " + SITE.plain(it.start || SITE.t.startTime), it.speed && "⚡ 増加スピード: " + it.speed, it.guarantee && "✅ " + it.guarantee].filter(Boolean);
+}
+function renderFaq(){
+  $("oqa").replaceChildren(...SITE.faq.filter(x => x.top).map(x => {
+    const d = document.createElement("details");
+    d.innerHTML = "<summary></summary><p></p>";
+    d.firstChild.textContent = SITE.plain(x.q); d.lastChild.innerHTML = SITE.f(x.a);
+    return d;
+  }));
+}
 function drawAll(){
   $("pf").replaceChildren(...CATALOG.map((p,i) => btn(i===P, p.name, () => { P=i; S=0; PL=1; Q=item().min; drawAll(); })));
   $("sv").replaceChildren(...CATALOG[P].items.map((it,i) => {
@@ -234,9 +219,9 @@ function drawAll(){
     `<span>${pl.name}${pl.pop?'<span class="badge">購入数最多</span>':''}<small>100${it.unit}あたり</small></span><span class="pr">${yen(pl.price)}</span>`, () => { PL=i; drawQty(); drawPlans(); })));
   $("ac").placeholder = "例: " + it.ex;
   $("ach").textContent = "URLには" + it.hint + "を入れてください。\n例: " + it.ex;
-  const inf = $("inf");
-  inf.hidden = !it.info;
-  if (it.info) inf.querySelector("ul").replaceChildren(...it.info.map(s => Object.assign(document.createElement("li"), {textContent:s})));
+  const inf = $("inf"), lines = infoLines(it);
+  inf.hidden = !lines.length;
+  inf.querySelector("ul").replaceChildren(...lines.map(s => Object.assign(document.createElement("li"), {textContent:s})));
   drawQty();
 }
 function drawPlans(){ [...$("pl").children].forEach((b,i) => b.className = i===PL ? "on" : ""); }
@@ -299,7 +284,7 @@ $("pgo").onclick = async () => {
 };
 
 (async () => {
-  Q = item().min; drawAll(); $("rc").textContent = "ご利用実績 " + TRACK_COUNT;
+  Q = item().min; drawAll(); $("rc").textContent = "ご利用実績 " + SITE.t.trackCount; $("ocl").href = SITE.t.openchatUrl; renderFaq();
   if (!await identify()) return;
   const pid = new URLSearchParams(location.search).get("pay");
   if (pid) {
