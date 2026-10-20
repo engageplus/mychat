@@ -88,6 +88,7 @@ button:disabled{opacity:.5}
 </div>
 <div id="zoom"><img alt=""></div>
 
+<script src="site-data.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -219,10 +220,10 @@ function card(o){
   const code = document.createElement("code"); code.textContent = o.id;
   const st = document.createElement("span"); st.className = "st " + o.status; st.textContent = STATUS[o.status] || o.status;
   h.append(code, st);
-  const d = document.createElement("div"); d.style.marginTop = "4px";
-  d.textContent = `${o.platform} ${o.service}${o.plan ? "（" + o.plan + "）" : ""} ${o.qty.toLocaleString()}${o.unit} ／ ${yen(o.total)}`;
-  const n = document.createElement("div"); n.className = "nt"; n.textContent = "対象: " + o.account;
-  c.append(h, d, n);
+  c.appendChild(h);
+  const its = SITE.orderItems(o);
+  its.forEach(it => { const d = document.createElement("div"); d.style.marginTop = "6px"; d.textContent = SITE.orderLine(it) + " ／ " + yen(it.total); const n = document.createElement("div"); n.className = "nt"; n.textContent = "対象: " + it.account; c.append(d, n); });
+  if (its.length > 1) { const s = document.createElement("div"); s.style.cssText = "margin-top:8px;font-weight:700;color:var(--accent)"; s.textContent = "合計 " + yen(o.total); c.appendChild(s); }
   if (o.status === "awaiting_payment") {
     const p = document.createElement("div"); p.className = "pay";
     const a = document.createElement("a"); a.className = "go"; a.href = "order.html?pay=" + encodeURIComponent(o.id); a.textContent = "お支払い手続きへ"; a.style.cssText = "display:inline-block;text-decoration:none;margin-top:6px";

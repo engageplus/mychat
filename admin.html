@@ -124,6 +124,7 @@ section{display:flex;flex-direction:column;min-width:0;min-height:0}
 </div>
 <div id="zoom"><img alt=""></div>
 
+<script src="site-data.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script>
@@ -310,7 +311,7 @@ function drawOrders(){
     const b = document.createElement("button"); b.className = "u o" + (o.id === curOrder ? " on" : "");
     const inf = document.createElement("div"); inf.className = "inf";
     const n = document.createElement("b"); n.textContent = o.id + "　¥" + o.total.toLocaleString();
-    const m = document.createElement("span"); m.textContent = o.platform + " " + o.service + " " + o.qty.toLocaleString() + o.unit;
+    const its = SITE.orderItems(o); const m = document.createElement("span"); m.textContent = SITE.orderLine(its[0]) + (its.length > 1 ? " ほか" + (its.length - 1) + "点" : "");
     inf.append(n, m);
     const s = document.createElement("span"); s.className = "st " + o.status; s.textContent = ST[o.status] || o.status;
     b.append(inf, s); b.onclick = () => showOrder(o); box.appendChild(b);
@@ -326,10 +327,11 @@ function showOrder(o){
   const add = (k, v) => { const dt = document.createElement("dt"); dt.textContent = k; const dd = document.createElement("dd"); if (v instanceof Node) dd.appendChild(v); else dd.textContent = v; dl.append(dt, dd); };
   const link = (u, ok) => { if (!ok) return u; const a = document.createElement("a"); a.href = u; a.target = "_blank"; a.rel = "noopener noreferrer"; a.textContent = u; return a; };
   add("お客様", o.name && o.name !== "お客様" ? o.name : o.uid);
-  add("サービス", o.platform + " " + o.service + (o.plan ? "（" + o.plan + "）" : ""));
-  add("数量", o.qty.toLocaleString() + o.unit);
-  add("金額", "¥" + o.total.toLocaleString());
-  add("対象", link(o.account, /^https?:\/\//i.test(o.account)));
+  SITE.orderItems(o).forEach((it, i) => {
+    add("商品" + (i + 1), SITE.orderLine(it) + " ／ ¥" + it.total.toLocaleString());
+    add("対象" + (i + 1), link(it.account, /^https?:\/\//i.test(it.account)));
+  });
+  add("合計金額", "¥" + o.total.toLocaleString());
   add("備考", o.note || "なし");
   add("PayPayリンク", o.payLink ? link(o.payLink, PAY_RE.test(o.payLink)) : "未受信");
   add("リンク期限", o.payExpire || "不明");

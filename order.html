@@ -10,7 +10,7 @@
 <style>
 :root{color-scheme:dark;--bg:#0b0b0b;--ink:#f3eee2;--sub:#9d9788;--line:#2b2924;--card:#151513;--accent:#d9b66f;--accent-ink:#0b0b0b;--warn:#e8895a;--ok:#7bc48f}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans JP",system-ui,sans-serif;font-size:15px;line-height:1.6;padding-bottom:calc(118px + env(safe-area-inset-bottom))}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans JP",system-ui,sans-serif;font-size:15px;line-height:1.6;padding-bottom:calc(170px + env(safe-area-inset-bottom))}
 .w{max-width:560px;margin:0 auto;padding:0 16px}
 header{display:flex;align-items:center;gap:10px;padding:calc(12px + env(safe-area-inset-top)) 16px 12px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:5}
 header img{width:32px;height:32px}
@@ -83,13 +83,31 @@ summary::-webkit-details-marker{display:none}
 summary::before{content:"Q ";color:var(--accent);font-weight:700}
 details p{margin:0 0 14px;font-size:14px}
 details a{color:var(--accent)}
+header a.hc{display:flex;flex-direction:column;align-items:center;line-height:1.3;padding:4px 12px;white-space:nowrap}
+header a.hc small{font-size:10px;color:var(--sub)}
+header a.hc span{font-size:13px}
+.ghostb{padding:11px 12px;border-radius:24px;border:1px solid var(--accent);color:var(--accent);font-weight:500;font-size:14px;white-space:nowrap}
+.ghostb:disabled{opacity:.4}
+.bar .go{padding:12px 16px;font-size:14px;white-space:nowrap}
+.bar .t b{font-size:20px}
+.cr{display:block;width:100%;max-width:560px;margin:0 auto 8px;padding:8px;border-radius:10px;background:var(--bg);border:1px solid var(--line);color:var(--accent);font-size:13px}
+#sheet{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:8;display:flex;align-items:flex-end}
+.sh{background:var(--bg);width:100%;max-width:560px;margin:0 auto;border-radius:16px 16px 0 0;max-height:80vh;max-height:80dvh;overflow:auto;padding:16px 16px calc(16px + env(safe-area-inset-bottom))}
+.sh-h,.sh-f{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.sh-h button{color:var(--sub);font-size:13px}
+.sh-f{margin-top:12px}
+.sh-f b{color:var(--accent);font-size:18px}
+.ci{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:8px 0;font-size:14px}
+.ci small{display:block;color:var(--sub);word-break:break-all;font-size:12px}
+.ci button{color:var(--warn);font-size:13px;flex:none}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(150px + env(safe-area-inset-bottom));background:var(--accent);color:var(--accent-ink);padding:8px 16px;border-radius:20px;font-size:13px;font-weight:700;z-index:9}
 </style>
 </head>
 <body>
 <header>
   <img src="logo-icon.png" alt="">
   <b>EngagePlus</b>
-  <a href="chat.html">チャット</a>
+  <a class="hc" href="chat.html"><small>ご不明点はお気軽に</small><span>💬 チャットで相談</span></a>
 </header>
 <div class="w">
   <div id="v1">
@@ -121,6 +139,7 @@ details a{color:var(--accent)}
     </div>
     <h2>よくある質問</h2>
     <div id="oqa"></div>
+    <div class="rec" style="margin-top:14px"><p>ご不明点がありましたら、こちらからお気軽にご相談ください。</p><a class="ghost" href="chat.html">💬 チャットで相談する</a></div>
     <p class="note" style="text-align:center"><a href="faq.html" style="color:var(--accent)">ほかの質問を見る</a></p>
   </div>
 
@@ -144,10 +163,14 @@ details a{color:var(--accent)}
   </div>
 </div>
 
-<div class="bar" id="bar"><div>
-  <span class="t">合計（税込）<b id="tot">¥0</b></span>
+<div class="bar" id="bar"><button class="cr" id="cr" hidden></button><div>
+  <span class="t">この商品（税込）<b id="tot">¥0</b></span>
+  <button class="ghostb" id="addc">カートに追加</button>
   <button class="go" id="go">注文する</button>
 </div><p class="nb" style="margin:6px auto 0;text-align:center">ご注文により、<a href="terms.html">利用規約</a>に同意したものとみなします。</p></div>
+
+<div id="sheet" hidden><div class="sh"><div class="sh-h"><b>カート</b><button id="sx" type="button">閉じる</button></div><div id="sl"></div><div class="sh-f"><b id="st"></b><button class="go" id="sgo" type="button">注文へ進む</button></div><p class="note">品目ごとにURLを入れて、最大5品目まで、まとめて注文できます。</p></div></div>
+<div id="toast" hidden></div>
 
 <script src="site-data.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -232,6 +255,7 @@ function drawQty(){
   $("ch").replaceChildren(...[1,3,5,10].map(k => { const b = document.createElement("button"); b.textContent = (it.min*k).toLocaleString() + it.unit; b.onclick = () => { Q = it.min*k; drawQty(); }; return b; }));
   $("qn").textContent = `${it.min.toLocaleString()}${it.unit}単位 ／ 最大 ${it.max.toLocaleString()}${it.unit}`;
   $("tot").textContent = yen(total());
+  drawBar();
 }
 $("mi").onclick = () => { Q -= item().min; drawQty(); };
 $("pu").onclick = () => { Q += item().min; drawQty(); };
@@ -244,28 +268,73 @@ function say(text, preview){
   db.ref("users/" + uid).update({name:profile.name, picture:profile.picture, lastMessage:preview, lastAt:ts, lastSender:"user"});
 }
 
-$("go").onclick = async () => {
-  const ac = $("ac").value.trim();
-  if (!ac) { $("er").textContent = "対象のアカウントまたは動画のURLを入力してください。"; $("ac").focus(); return; }
+const MAXI = SITE.maxItems || 5;
+let cart = [];
+try { cart = JSON.parse(localStorage.getItem("ep_cart") || "[]"); } catch(e){}
+const saveCart = () => { try { localStorage.setItem("ep_cart", JSON.stringify(cart)); } catch(e){} };
+const cartSum = () => cart.reduce((s,i) => s + i.total, 0);
+const curItem = () => { const it = item(); return {platform:CATALOG[P].name, service:it.name, plan:it.plans ? it.plans[PL].name : "", qty:Q, unit:it.unit, total:total(), account:$("ac").value.trim()}; };
+function toast(m){ const e = $("toast"); e.textContent = m; e.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(() => e.hidden = true, 2200); }
+function drawBar(){
+  const pend = cartSum() + ($("ac").value.trim() || !cart.length ? total() : 0);
+  $("cr").hidden = !cart.length;
+  $("cr").textContent = `🛒 カート ${cart.length}/${MAXI}品目　${yen(cartSum())}　▲`;
+  $("go").textContent = cart.length ? `注文へ ${yen(pend)}` : "注文する";
+  $("addc").disabled = cart.length >= MAXI;
+}
+function addToCart(){
+  const c = curItem();
+  if (!c.account) { $("er").textContent = "対象のアカウントまたは動画のURLを入力してください。"; $("ac").focus(); return; }
+  if (cart.length >= MAXI) { $("er").textContent = `カートに入れられるのは${MAXI}品目までです。`; return; }
+  cart.push(c); saveCart(); $("ac").value = ""; $("er").textContent = "";
+  toast(`カートに追加しました（${cart.length}/${MAXI}）`); drawBar();
+}
+function drawSheet(){
+  const box = $("sl"); box.textContent = "";
+  cart.forEach((c, i) => {
+    const r = document.createElement("div"); r.className = "ci";
+    const b = document.createElement("div"); b.innerHTML = "<b></b><small></small>";
+    b.firstChild.textContent = SITE.orderLine(c); b.lastChild.textContent = yen(c.total) + " ／ " + c.account;
+    const x = document.createElement("button"); x.type = "button"; x.textContent = "削除";
+    x.onclick = () => { cart.splice(i, 1); saveCart(); drawBar(); if (!cart.length) $("sheet").hidden = true; else drawSheet(); };
+    r.append(b, x); box.appendChild(r);
+  });
+  $("st").textContent = "合計 " + yen(cartSum());
+}
+$("cr").onclick = () => { drawSheet(); $("sheet").hidden = false; };
+$("sx").onclick = () => $("sheet").hidden = true;
+$("sgo").onclick = () => { $("sheet").hidden = true; checkout(false); };
+$("addc").onclick = addToCart;
+$("go").onclick = () => checkout(true);
+$("ac").addEventListener("input", drawBar);
+
+async function checkout(includeCurrent){
+  const items = [...cart];
+  if (includeCurrent) {
+    const c = curItem();
+    if (c.account) { if (items.length >= MAXI) { $("er").textContent = `カートに入れられるのは${MAXI}品目までです。`; return; } items.push(c); }
+  }
+  if (!items.length) { $("er").textContent = "対象のアカウントまたは動画のURLを入力してください。"; $("ac").focus(); return; }
   $("er").textContent = ""; $("go").disabled = true;
-  const it = item(), plan = it.plans ? it.plans[PL].name : "";
   const id = ("EP" + Date.now().toString(36).slice(-4) + Math.random().toString(36).slice(2,4)).toUpperCase();
-  const now = Date.now();
-  const o = {id, uid, name:profile.name, platform:CATALOG[P].name, service:it.name, plan, qty:Q, unit:it.unit, total:total(), account:ac, note:$("nt").value.trim(), status:"awaiting_payment", agreedAt:now, termsVer:"2026-10-10", createdAt:now, updatedAt:now};
+  const now = Date.now(), first = items[0], sum = items.reduce((s,i) => s + i.total, 0);
+  const o = {id, uid, name:profile.name, items, platform:first.platform, service:first.service, plan:first.plan, qty:first.qty, unit:first.unit, account:first.account, total:sum, note:$("nt").value.trim(), status:"awaiting_payment", agreedAt:now, termsVer:"2026-10-10", createdAt:now, updatedAt:now};
   try {
     await db.ref(`orders/${uid}/${id}`).set(o);
-    say(`【新規注文 ${id}】\n${o.platform} ${o.service}${plan ? "（" + plan + "）" : ""}\n${Q.toLocaleString()}${o.unit} ／ ${yen(o.total)}\n対象: ${ac}`, `新規注文 ${id}`);
-    showPay(o); return;
+    const lines = items.map((it, i) => `${i+1}. ${SITE.orderLine(it)} ／ ${yen(it.total)}\n   対象: ${it.account}`).join("\n");
+    say(`【新規注文 ${id}】\n${lines}\n合計 ${yen(sum)}`, `新規注文 ${id}`);
+    cart = []; saveCart(); showPay(o); return;
   } catch(e){ $("er").textContent = "送信に失敗しました。通信状況をご確認のうえ、もう一度お試しください。"; }
   $("go").disabled = false;
-};
+}
 
 let payOrder = null;
 function showPay(o){
   payOrder = o;
   $("v1").hidden = true; $("bar").hidden = true; $("v3").hidden = false;
   $("pid").textContent = o.id; $("pamt").textContent = yen(o.total);
-  $("psum").textContent = `${o.platform} ${o.service}${o.plan ? "（" + o.plan + "）" : ""} ${o.qty.toLocaleString()}${o.unit}`;
+  $("psum").style.whiteSpace = "pre-line";
+  $("psum").textContent = SITE.orderItems(o).map(it => SITE.orderLine(it) + " ／ " + yen(it.total)).join("\n");
   document.querySelectorAll(".amt").forEach(e => e.textContent = yen(o.total));
   window.scrollTo(0, 0);
 }
