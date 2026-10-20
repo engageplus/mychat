@@ -101,7 +101,16 @@ window.SITE = {
   ],
 
   /* ---------- 内部の仕組み（通常は触らなくてOK） ---------- */
-  plain: function (s) { return this._rep(s, false); },
+    /* ---------- カート ---------- */
+  maxItems: 5,   // 1回の注文に入れられる品目の上限
+
+  orderItems: function (o) {
+    return (o.items && o.items.length) ? o.items : [{ platform: o.platform, service: o.service, plan: o.plan || "", qty: o.qty, unit: o.unit, total: o.total, account: o.account }];
+  },
+  orderLine: function (it) {
+    return it.platform + " " + it.service + (it.plan ? "（" + it.plan + "）" : "") + " " + it.qty.toLocaleString("ja-JP") + it.unit;
+  },
+plain: function (s) { return this._rep(s, false); },
   f: function (s) { return this._rep(s, true); },
   _rep: function (s, mark) {
     var self = this;
