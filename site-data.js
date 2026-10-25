@@ -26,7 +26,7 @@ window.SITE = {
     refundMethod:  "PayPayでの送金",
     refundDays:    "7営業日以内に開始",
     retention:     "最終のご注文から約12か月",     // 個人情報の保存期間
-    exchangeRule:  "お支払い金額と同額になる数量】", // 他サービスへ変更するときの換算方法
+    exchangeRule:  "お支払い金額と同額になる数量", // 他サービスへ変更するときの換算方法
     jpGuarantee:   "30日間は無料で補充", // Instagram日本人フォロワーの保証
 
     // ■ 保証・提供できなかった場合の対応（複数ページに表示）
