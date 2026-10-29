@@ -62,7 +62,7 @@ window.SITE = {
       { name: "再生回数", unit: "回", per: 3000, price: 150, min: 3000, max: 900000,
         hint: "TikTokの動画URL", ex: "https://www.tiktok.com/@XXXXX/video/0000000000",
         speed: "5,000,000回/日", guarantee: "永久減少保証" },
-      { name: "いいね", unit: "回", per: 100, price: 300, min: 100, max: 10000,
+      { name: "【アップデートにより受付停止】いいね", unit: "回", per: 100, price: 300, min: 100, max: 10000,
         hint: "TikTokの動画URL", ex: "https://www.tiktok.com/@XXXXX/video/0000000000",
         speed: "最大10,000回/日", guarantee: "永久減少保証" } ] },
     { name: "X", items: [
