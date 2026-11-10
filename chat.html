@@ -260,6 +260,8 @@ $("opb").onclick = () => { const h = $("ol").hidden = !$("ol").hidden; $("opb").
   if (!await identify()) return;
   if (placed) { $("bnid").textContent = placed.slice(0, 20); $("bn").hidden = false; }
   $("bnx").onclick = () => $("bn").hidden = true;
+  const cq = new URLSearchParams(location.search).get("consult");
+  if (cq) { $("in").value = cq.slice(0, 500); $("in").focus(); }
   
   db.ref("orders/" + uid).on("value", s => {
     const a = document.activeElement;

@@ -120,19 +120,26 @@ header a.hc span{font-size:13px}
     <div class="pf" id="pf"></div>
     <h2>2. サービス</h2>
     <div class="opt" id="sv"></div>
-    <div id="planBox" hidden><h2>プラン</h2><div class="opt" id="pl"></div></div>
+    <div id="planBox" hidden><h2 id="pln">プラン</h2><div class="opt" id="pl"></div></div>
     <div id="inf" class="inf" hidden><b>詳細</b><ul></ul></div>
+    <div id="consultBox" class="inf" hidden><b>このサービスは、チャットでご相談ください</b><p id="cmsg" style="white-space:pre-line;margin:8px 0"></p><a class="ghost" id="clink" href="#">💬 チャットで相談する</a></div>
+    <div id="pausedBox" class="inf" hidden><b>⚠️ 受付停止中</b><p id="pmsg" style="margin:8px 0 0"></p></div>
+    <div id="orderArea">
+    <div id="qtyArea">
     <h2>3. 数量</h2>
     <div class="qty"><button id="mi" aria-label="減らす">−</button><input id="q" type="number" inputmode="numeric"><button id="pu" aria-label="増やす">＋</button></div>
     <div class="chips" id="ch"></div>
     <p class="note" id="qn"></p>
+    </div>
     <h2>4. 対象のアカウント／動画</h2>
     <input id="ac" placeholder="" autocomplete="off" inputmode="url">
     <p class="note" id="ach" style="white-space:pre-line"></p>
+    <div id="chatnote" class="inf" style="border-color:var(--accent)" hidden></div>
     <p class="note">SNSのパスワードは不要です。アカウントは公開設定にしてください（非公開だと反映できません）。</p>
     <h2>備考（任意）</h2>
     <textarea id="nt" rows="2" placeholder="ご希望があればご記入ください"></textarea>
     <p class="note">注文後は、お支払い手続きの画面に進みます。</p>
+    </div>
     <p class="err" id="er" role="alert"></p>
 
     <h2>ご利用実績</h2>
@@ -194,6 +201,7 @@ SITE.maxItems = SITE.maxItems || 5;
 SITE.orderItems = SITE.orderItems || function (o) { return (o.items && o.items.length) ? o.items : [{ platform: o.platform, service: o.service, plan: o.plan || "", qty: o.qty, unit: o.unit, total: o.total, account: o.account }]; };
 SITE.orderLine = SITE.orderLine || function (it) { return it.platform + " " + it.service + (it.plan ? "（" + it.plan + "）" : "") + " " + it.qty.toLocaleString("ja-JP") + it.unit; };
 </script>
+<script src="services.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -239,13 +247,21 @@ async function identify(){
 }
 
 const item = () => CATALOG[P].items[S];
+const defPlan = it => { if (!it.plans) return 0; const i = it.plans.findIndex(p => p.pop); return i >= 0 ? i : 0; };
+const stepOf = it => it.step || it.min;
+const consultMsg = it => "【" + CATALOG[P].name + " " + it.name + "】について相談したいです。" + (it.consultAsk ? "\n" + it.consultAsk : "");
 const unitPrice = () => item().plans ? item().plans[PL].price : item().price;
 const total = () => Math.round(unitPrice() * Q / item().per);
 
 function btn(on, html, fn){ const b = document.createElement("button"); b.className = on ? "on" : ""; b.innerHTML = html; b.onclick = fn; return b; }
 
 function infoLines(it){
-  return ["⌛ 開始時間: " + SITE.plain(it.start || SITE.t.startTime), it.speed && "⚡ 増加スピード: " + it.speed, it.guarantee && "✅ " + it.guarantee].filter(Boolean);
+  const main = it.info ? it.info : [
+    "⌛ 開始時間: " + SITE.plain(it.start || SITE.t.startTime),
+    it.speed && "⚡ 増加スピード: " + it.speed,
+    it.guarantee && "✅ " + it.guarantee
+  ];
+  return [...(it.desc || []), ...main, ...(it.notes || [])].filter(Boolean);
 }
 function renderFaq(){
   $("oqa").replaceChildren(...SITE.faq.filter(x => x.top).map(x => {
@@ -256,34 +272,44 @@ function renderFaq(){
   }));
 }
 function drawAll(){
-  $("pf").replaceChildren(...CATALOG.map((p,i) => btn(i===P, p.name, () => { P=i; S=0; PL=1; Q=item().min; drawAll(); })));
+  $("pf").replaceChildren(...CATALOG.map((p,i) => btn(i===P, p.name, () => { P=i; S=0; PL=defPlan(item()); Q=item().min; drawAll(); })));
   $("sv").replaceChildren(...CATALOG[P].items.map((it,i) => {
-    const per = it.plans ? "プランにより異なる" : yen(it.price) + " / " + it.per.toLocaleString() + it.unit;
-    return btn(i===S, `<span>${it.name}<small>最低 ${it.min.toLocaleString()}${it.unit}から</small></span><span class="pr">${per}</span>`, () => { S=i; PL=1; Q=item().min; drawAll(); });
+    const ps = it.plans ? it.plans.map(p => p.price) : [];
+    const per = it.consult ? it.priceText : it.paused ? "⚠️ 受付停止中" : it.plans ? (new Set(ps).size === 1 ? yen(ps[0]) + " / " + it.per.toLocaleString() + it.unit : "プランにより異なる") : yen(it.price) + " / " + it.per.toLocaleString() + it.unit;
+    const sub = it.consult ? "チャットで相談" : it.paused ? "現在、受付を停止しています" : `最低 ${it.min.toLocaleString()}${it.unit}から`;
+    return btn(i===S, `<span>${it.name}${it.badge ? '<span class="badge">' + it.badge + '</span>' : ''}<small>${sub}</small></span><span class="pr">${per}</span>`, () => { S=i; PL=defPlan(item()); Q=item().min; drawAll(); });
   }));
   const it = item();
   $("planBox").hidden = !it.plans;
   if (it.plans) $("pl").replaceChildren(...it.plans.map((pl,i) => btn(i===PL,
-    `<span>${pl.name}${pl.pop?'<span class="badge">購入数最多</span>':''}<small>100${it.unit}あたり</small></span><span class="pr">${yen(pl.price)}</span>`, () => { PL=i; drawQty(); drawPlans(); })));
+    `<span>${pl.name}${pl.pop?'<span class="badge">購入数最多</span>':''}<small>${it.per.toLocaleString()}${it.unit}あたり</small></span><span class="pr">${yen(pl.price)}</span>`, () => { PL=i; drawQty(); drawPlans(); })));
+  $("pln").textContent = it.planLabel || "プラン";
+  $("consultBox").hidden = !it.consult; $("pausedBox").hidden = !it.paused;
+  $("orderArea").hidden = !!(it.consult || it.paused);
+  $("qtyArea").hidden = it.max === it.min;
+  if (it.consult) { $("cmsg").textContent = it.consultText || ""; $("clink").href = "chat.html?consult=" + encodeURIComponent(consultMsg(it)); }
+  if (it.paused) $("pmsg").textContent = it.pausedText || "現在、受付を停止しています。";
+  $("chatnote").hidden = !it.chatNotice; $("chatnote").textContent = it.chatNotice || "";
   $("ac").placeholder = "例: " + it.ex;
   $("ach").textContent = "URLには" + it.hint + "を入れてください。\n例: " + it.ex;
   const inf = $("inf"), lines = infoLines(it);
   inf.hidden = !lines.length;
   inf.querySelector("ul").replaceChildren(...lines.map(s => Object.assign(document.createElement("li"), {textContent:s})));
-  drawQty();
+  if (it.consult || it.paused) { inf.hidden = true; drawBar(); } else drawQty();
 }
 function drawPlans(){ [...$("pl").children].forEach((b,i) => b.className = i===PL ? "on" : ""); }
 function drawQty(){
   const it = item();
-  Q = Math.min(it.max, Math.max(it.min, Math.ceil(Q / it.min) * it.min));
-  $("q").value = Q; $("q").step = it.min; $("q").min = it.min; $("q").max = it.max;
-  $("ch").replaceChildren(...[1,3,5,10].map(k => { const b = document.createElement("button"); b.textContent = (it.min*k).toLocaleString() + it.unit; b.onclick = () => { Q = it.min*k; drawQty(); }; return b; }));
-  $("qn").textContent = `${it.min.toLocaleString()}${it.unit}単位 ／ 最大 ${it.max.toLocaleString()}${it.unit}`;
+  const st = stepOf(it);
+  Q = Math.min(it.max, Math.max(it.min, it.min + Math.ceil((Q - it.min) / st) * st));
+  $("q").value = Q; $("q").step = st; $("q").min = it.min; $("q").max = it.max;
+  $("ch").replaceChildren(...[1,3,5,10].filter(k => it.min*k <= it.max).map(k => { const b = document.createElement("button"); b.textContent = (it.min*k).toLocaleString() + it.unit; b.onclick = () => { Q = it.min*k; drawQty(); }; return b; }));
+  $("qn").textContent = `${it.min.toLocaleString()}${it.unit}から、${st.toLocaleString()}${it.unit}単位 ／ 最大 ${it.max.toLocaleString()}${it.unit}`;
   $("tot").textContent = yen(total());
   drawBar();
 }
-$("mi").onclick = () => { Q -= item().min; drawQty(); };
-$("pu").onclick = () => { Q += item().min; drawQty(); };
+$("mi").onclick = () => { Q -= stepOf(item()); drawQty(); };
+$("pu").onclick = () => { Q += stepOf(item()); drawQty(); };
 $("q").onchange = () => { Q = +$("q").value || item().min; drawQty(); };
 
 
@@ -298,14 +324,18 @@ let cart = [];
 try { cart = JSON.parse(localStorage.getItem("ep_cart") || "[]"); } catch(e){}
 const saveCart = () => { try { localStorage.setItem("ep_cart", JSON.stringify(cart)); } catch(e){} };
 const cartSum = () => cart.reduce((s,i) => s + i.total, 0);
-const curItem = () => { const it = item(); return {platform:CATALOG[P].name, service:it.name, plan:it.plans ? it.plans[PL].name : "", qty:Q, unit:it.unit, total:total(), account:$("ac").value.trim()}; };
+const curItem = () => { const it = item(); return {platform:CATALOG[P].name, service:it.name, plan:it.plans ? it.plans[PL].name : "", qty:Q, unit:it.unit, total:total(), account:$("ac").value.trim(), notice:it.chatNotice || ""}; };
 function toast(m){ const e = $("toast"); e.textContent = m; e.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(() => e.hidden = true, 2200); }
 function drawBar(){
-  const pend = cartSum() + ($("ac").value.trim() || !cart.length ? total() : 0);
+  const it = item(), off = !!(it.consult || it.paused);
   $("cr").hidden = !cart.length;
   $("cr").textContent = `🛒 カート ${cart.length}/${MAXI}品目　${yen(cartSum())}　▲`;
-  $("go").textContent = cart.length ? `注文へ ${yen(pend)}` : "注文する";
-  $("addc").disabled = cart.length >= MAXI;
+  $("addc").hidden = off; $("addc").disabled = cart.length >= MAXI;
+  if (it.consult) { $("tot").textContent = it.priceText || "要相談"; $("go").textContent = "チャットで相談する"; $("go").disabled = false; return; }
+  if (it.paused) { $("tot").textContent = "受付停止中"; $("go").textContent = cart.length ? `注文へ ${yen(cartSum())}` : "受付停止中"; $("go").disabled = !cart.length; return; }
+  const pend = cartSum() + ($("ac").value.trim() || !cart.length ? total() : 0);
+  $("tot").textContent = yen(total());
+  $("go").textContent = cart.length ? `注文へ ${yen(pend)}` : "注文する"; $("go").disabled = false;
 }
 function addToCart(){
   const c = curItem();
@@ -330,7 +360,12 @@ $("cr").onclick = () => { drawSheet(); $("sheet").hidden = false; };
 $("sx").onclick = () => $("sheet").hidden = true;
 $("sgo").onclick = () => { $("sheet").hidden = true; checkout(false); };
 $("addc").onclick = addToCart;
-$("go").onclick = () => checkout(true);
+$("go").onclick = () => {
+  const it = item();
+  if (it.consult) { location.href = "chat.html?consult=" + encodeURIComponent(consultMsg(it)); return; }
+  if (it.paused) { if (cart.length) checkout(false); return; }
+  checkout(true);
+};
 $("ac").addEventListener("input", drawBar);
 
 let pending = null;
@@ -357,7 +392,10 @@ function drawConfirm(items){
     "<dt>お支払い方法</dt><dd>PayPay（お客様が作成した送金リンクで送金します）。次の画面で手順を表示します。</dd>" +
     "<dt>サービスの提供時期</dt><dd>入金の確認後、通常" + SITE.f(SITE.t.startTime) + "に開始します。数量やSNS側の状況により、前後する場合があります。</dd>" +
     "<dt>キャンセル・返金</dt><dd>提供の開始前は、キャンセルできます。開始後は、お客様のご都合によるキャンセル・返金はできません。提供できなかった場合は、" + SITE.f(SITE.t.fallback) + "で対応します。<a href=\"terms.html#refund\">詳しくはこちら</a></dd>" +
-    "<dt>数が減った場合</dt><dd>" + SITE.f(SITE.t.guaranteeShort) + "</dd>";
+    "<dt>数が減った場合</dt><dd>" + SITE.f(SITE.t.guaranteeShort) + "</dd>" +
+    ([...new Set(items.map(i => i.notice).filter(Boolean))].map(n => "<dt>ご注文後のご案内</dt><dd></dd>").join(""));
+  const nn = [...new Set(items.map(i => i.notice).filter(Boolean))];
+  [...$("cd").querySelectorAll("dd")].slice(-nn.length || undefined).forEach((d, i) => { if (nn.length) d.textContent = nn[i]; });
 }
 async function placeOrder(items){
   $("cgo").disabled = true; $("cerr").textContent = "";
@@ -400,7 +438,7 @@ $("pgo").onclick = async () => {
 };
 
 (async () => {
-  Q = item().min; drawAll(); $("rc").textContent = "ご利用実績 " + SITE.t.trackCount; $("ocl").href = SITE.t.openchatUrl; renderFaq();
+  PL = defPlan(item()); Q = item().min; drawAll(); $("rc").textContent = "ご利用実績 " + SITE.t.trackCount; $("ocl").href = SITE.t.openchatUrl; renderFaq();
   if (!await identify()) return;
   const pid = new URLSearchParams(location.search).get("pay");
   if (pid) {

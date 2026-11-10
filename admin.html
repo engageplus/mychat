@@ -135,6 +135,7 @@ SITE.maxItems = SITE.maxItems || 5;
 SITE.orderItems = SITE.orderItems || function (o) { return (o.items && o.items.length) ? o.items : [{ platform: o.platform, service: o.service, plan: o.plan || "", qty: o.qty, unit: o.unit, total: o.total, account: o.account }]; };
 SITE.orderLine = SITE.orderLine || function (it) { return it.platform + " " + it.service + (it.plan ? "（" + it.plan + "）" : "") + " " + it.qty.toLocaleString("ja-JP") + it.unit; };
 </script>
+<script src="services.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -344,7 +345,7 @@ function showOrder(o){
     add("商品" + (i + 1), SITE.orderLine(it) + " ／ ¥" + it.total.toLocaleString());
     add("対象" + (i + 1), link(it.account, /^https?:\/\//i.test(it.account)));
   });
-  const exp = SITE.orderItems(o).reduce((s, it) => { const p = SITE.catalog.find(x => x.name === it.platform), c = p && p.items.find(x => x.name === it.service); if (!c) return NaN; const pr = c.plans ? (c.plans.find(x => x.name === it.plan) || {}).price : c.price; return s + Math.round(pr * it.qty / c.per); }, 0);
+  const exp = SITE.orderItems(o).reduce((s, it) => { const p = SITE.catalog.find(x => x.name === it.platform), c = p && p.items.find(x => x.name === it.service || (x.aliases || []).includes(it.service)); if (!c) return NaN; const pr = c.plans ? (c.plans.find(x => x.name === it.plan) || (it.plan ? {} : c.plans[0])).price : c.price; return s + Math.round(pr * it.qty / c.per); }, 0);
   add("合計金額", "¥" + o.total.toLocaleString() + (exp === o.total ? "" : "　⚠ 料金表と一致しません（料金表では " + (isNaN(exp) ? "不明" : "¥" + exp.toLocaleString()) + "）"));
   add("備考", o.note || "なし");
   add("PayPayリンク", o.payLink ? link(o.payLink, PAY_RE.test(o.payLink)) : "未受信");
